@@ -107,7 +107,6 @@ student-dropout-prediction/
 
 ## ⚙️ Installation
 
-```
 
 Install dependencies:
 
