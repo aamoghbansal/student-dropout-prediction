@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Campus AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="container-site">
+    <a class="brand" href="/">Smart Campus <span>AI</span></a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="#predict">Predict</a></li>
+      <li><a href="/students">Dataset</a></li>
+      <li><a href="/metrics">Metrics</a></li>
+      <li><a href="#about">About</a></li>
+    </ul>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-media" aria-hidden="true"></div>
+  <div class="container-site hero-content">
+    <div class="hero-brand">Smart Campus AI</div>
+    <h1 class="hero-title">Know which students need support before they leave</h1>
+    <p class="hero-lead">Predict graduate, enrolled, or dropout risk from academic and socioeconomic signals.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#predict">Run a prediction</a>
+      <a class="btn btn-ghost" href="/students">Browse dataset</a>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="about">
+  <div class="container-site">
+    <div class="section-head">
+      <h2 class="section-title">Built to catch risk early</h2>
+      <p class="section-lead">
+        Smart Campus AI estimates whether a student is likely to graduate, remain enrolled,
+        or drop out using academic history, personal context, and economic indicators from
+        the UCI Student Dropout and Academic Success dataset.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 0;">
+  <div class="container-site">
+    <div class="section-head">
+      <h2 class="section-title">How it works</h2>
+      <p class="section-lead">Three steps from campus records to a clear status call.</p>
+    </div>
+    <div class="split-3">
+      <div>
+        <div class="step-num">01</div>
+        <h3>Data</h3>
+        <p>Enter the 12 key fields marked with *. Optional fields auto-fill from typical campus averages.</p>
+      </div>
+      <div>
+        <div class="step-num">02</div>
+        <h3>Model</h3>
+        <p>A Random Forest classifier compares patterns across thousands of labeled student outcomes.</p>
+      </div>
+      <div>
+        <div class="step-num">03</div>
+        <h3>Outcome</h3>
+        <p>You get a predicted status, confidence score, and the top drivers behind the result.</p>
+      </div>
+    </div>
+    <div class="stats-row">
+      <div class="stat"><strong>4,424</strong><span>Students in dataset</span></div>
+      <div class="stat"><strong>Random Forest</strong><span>Selected model</span></div>
+      <div class="stat"><strong>77.97%</strong><span>Reported accuracy</span></div>
+      <div class="stat"><strong>12</strong><span>Required inputs</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="section" id="predict">
+  <div class="container-site">
+    <div class="section-head">
+      <h2 class="section-title">Run a prediction</h2>
+      <p class="section-lead">
+        Fields marked with <span class="req">*</span> are required. Leave additional fields blank
+        to use typical values from the training data. Enter semester SGPA on a 0–10 scale.
+      </p>
+      <p class="model-status">
+        Model: <strong>{{ model_source }}</strong>
+        {% if model_note %}<span>{{ model_note }}</span>{% endif %}
+      </p>
+    </div>
+
+    <form class="predict-panel" action="/predict" method="POST">
+
+      <fieldset class="fieldset">
+        <legend>Student profile <span class="req">*</span></legend>
+        <div class="field-grid">
+          <div class="field">
+            <label for="course">Course / program <span class="req">*</span></label>
+            <select id="course" name="Course" required>
+              <option value="" {% if not form_data.get('Course') %}selected{% endif %}>Select a course</option>
+              {% for value, label in courses %}
+              <option value="{{ value }}" {% if form_data.get('Course') == value|string %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <span class="field-hint">The degree program the student is enrolled in</span>
+          </div>
+          <div class="field">
+            <label for="gender">Gender <span class="req">*</span></label>
+            <select id="gender" name="Gender" required>
+              <option value="" {% if not form_data.get('Gender') %}selected{% endif %}>Select</option>
+              <option value="0" {% if form_data.get('Gender') == '0' %}selected{% endif %}>Female</option>
+              <option value="1" {% if form_data.get('Gender') == '1' %}selected{% endif %}>Male</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="age">Age at enrollment <span class="req">*</span></label>
+            <input id="age" type="number" min="15" max="70" name="Age at enrollment" required value="{{ form_data.get('Age at enrollment', '') }}">
+            <span class="field-hint">Student’s age when they started the course</span>
+          </div>
+          <div class="field">
+            <label for="debtor">Has unpaid tuition debt? <span class="req">*</span></label>
+            <select id="debtor" name="Debtor" required>
+              <option value="" {% if not form_data.get('Debtor') %}selected{% endif %}>Select</option>
+              <option value="0" {% if form_data.get('Debtor') == '0' %}selected{% endif %}>No</option>
+              <option value="1" {% if form_data.get('Debtor') == '1' %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="tuition">Tuition fees up to date? <span class="req">*</span></label>
+            <select id="tuition" name="Tuition fees up to date" required>
+              <option value="" {% if not form_data.get('Tuition fees up to date') %}selected{% endif %}>Select</option>
+              <option value="1" {% if form_data.get('Tuition fees up to date') == '1' %}selected{% endif %}>Yes</option>
+              <option value="0" {% if form_data.get('Tuition fees up to date') == '0' %}selected{% endif %}>No</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="scholarship">Receives a scholarship? <span class="req">*</span></label>
+            <select id="scholarship" name="Scholarship holder" required>
+              <option value="" {% if not form_data.get('Scholarship holder') %}selected{% endif %}>Select</option>
+              <option value="0" {% if form_data.get('Scholarship holder') == '0' %}selected{% endif %}>No</option>
+              <option value="1" {% if form_data.get('Scholarship holder') == '1' %}selected{% endif %}>Yes</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>First semester results <span class="req">*</span></legend>
+        <div class="field-grid">
+          <div class="field">
+            <label for="s1-enrolled">Subjects enrolled <span class="req">*</span></label>
+            <input id="s1-enrolled" type="number" min="0" max="30" name="Curricular units 1st sem (enrolled)" required value="{{ form_data.get('Curricular units 1st sem (enrolled)', '') }}">
+            <span class="field-hint">How many subjects the student registered for</span>
+          </div>
+          <div class="field">
+            <label for="s1-approved">Subjects passed <span class="req">*</span></label>
+            <input id="s1-approved" type="number" min="0" max="30" name="Curricular units 1st sem (approved)" required value="{{ form_data.get('Curricular units 1st sem (approved)', '') }}">
+            <span class="field-hint">How many of those subjects they successfully passed</span>
+          </div>
+          <div class="field">
+            <label for="s1-grade">SGPA (out of 10) <span class="req">*</span></label>
+            <input id="s1-grade" type="number" min="0" max="10" step="0.01" name="Curricular units 1st sem (grade)" required value="{{ form_data.get('Curricular units 1st sem (grade)', '') }}">
+            <span class="field-hint">Semester Grade Point Average for the 1st semester</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset class="fieldset">
+        <legend>Second semester results <span class="req">*</span></legend>
+        <div class="field-grid">
+          <div class="field">
+            <label for="s2-enrolled">Subjects enrolled <span class="req">*</span></label>
+            <input id="s2-enrolled" type="number" min="0" max="30" name="Curricular units 2nd sem (enrolled)" required value="{{ form_data.get('Curricular units 2nd sem (enrolled)', '') }}">
+            <span class="field-hint">How many subjects the student registered for</span>
+          </div>
+          <div class="field">
+            <label for="s2-approved">Subjects passed <span class="req">*</span></label>
+            <input id="s2-approved" type="number" min="0" max="30" name="Curricular units 2nd sem (approved)" required value="{{ form_data.get('Curricular units 2nd sem (approved)', '') }}">
+            <span class="field-hint">How many of those subjects they successfully passed</span>
+          </div>
+          <div class="field">
+            <label for="s2-grade">SGPA (out of 10) <span class="req">*</span></label>
+            <input id="s2-grade" type="number" min="0" max="10" step="0.01" name="Curricular units 2nd sem (grade)" required value="{{ form_data.get('Curricular units 2nd sem (grade)', '') }}">
+            <span class="field-hint">Semester Grade Point Average for the 2nd semester</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <details class="optional-block">
+        <summary>Additional details <span class="optional-tag">optional</span></summary>
+        <p class="optional-hint">Only fill these if you know them. Blank fields use typical values from the dataset.</p>
+
+        <fieldset class="fieldset">
+          <legend>Background</legend>
+          <div class="field-grid">
+            <div class="field">
+              <label for="marital">Marital status</label>
+              <select id="marital" name="Marital status">
+                <option value="" {% if not form_data.get('Marital status') %}selected{% endif %}>Typical</option>
+                {% for value, label in marital %}
+                <option value="{{ value }}" {% if form_data.get('Marital status') == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="app-mode">How the student applied</label>
+              <select id="app-mode" name="Application mode">
+                <option value="" {% if not form_data.get('Application mode') %}selected{% endif %}>Typical</option>
+                {% for value, label in application_modes %}
+                <option value="{{ value }}" {% if form_data.get('Application mode') == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="app-order">Application preference (0–9)</label>
+              <input id="app-order" type="number" min="0" max="9" name="Application order" value="{{ form_data.get('Application order', '') }}">
+              <span class="field-hint">0 = first choice, higher = lower preference</span>
+            </div>
+            <div class="field">
+              <label for="attendance">Class schedule</label>
+              <select id="attendance" name="Daytime/evening attendance">
+                <option value="" {% if not form_data.get('Daytime/evening attendance') %}selected{% endif %}>Typical</option>
+                <option value="1" {% if form_data.get('Daytime/evening attendance') == '1' %}selected{% endif %}>Daytime</option>
+                <option value="0" {% if form_data.get('Daytime/evening attendance') == '0' %}selected{% endif %}>Evening</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="prev-qual">Previous qualification</label>
+              <select id="prev-qual" name="Previous qualification">
+                <option value="" {% if not form_data.get('Previous qualification') %}selected{% endif %}>Typical</option>
+                {% for value, label in previous_qualifications %}
+                <option value="{{ value }}" {% if form_data.get('Previous qualification') == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="nationality">Nationality</label>
+              <select id="nationality" name="Nacionality">
+                <option value="" {% if not form_data.get('Nacionality') %}selected{% endif %}>Typical</option>
+                {% for value, label in nationalities %}
+                <option value="{{ value }}" {% if form_data.get('Nacionality') == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="displaced">Lives away from family home?</label>
+              <select id="displaced" name="Displaced">
+                <option value="" {% if not form_data.get('Displaced') %}selected{% endif %}>Typical</option>
+                <option value="0" {% if form_data.get('Displaced') == '0' %}selected{% endif %}>No</option>
+                <option value="1" {% if form_data.get('Displaced') == '1' %}selected{% endif %}>Yes</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="special-needs">Has special educational needs?</label>
+              <select id="special-needs" name="Educational special needs">
+                <option value="" {% if not form_data.get('Educational special needs') %}selected{% endif %}>Typical</option>
+                <option value="0" {% if form_data.get('Educational special needs') == '0' %}selected{% endif %}>No</option>
+                <option value="1" {% if form_data.get('Educational special needs') == '1' %}selected{% endif %}>Yes</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="international">International student?</label>
+              <select id="international" name="International">
+                <option value="" {% if not form_data.get('International') %}selected{% endif %}>Typical</option>
+                <option value="0" {% if form_data.get('International') == '0' %}selected{% endif %}>No</option>
+                <option value="1" {% if form_data.get('International') == '1' %}selected{% endif %}>Yes</option>
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <legend>Family background</legend>
+          <div class="field-grid">
+            <div class="field">
+              <label for="mother-qual">Mother's education level</label>
+              <select id="mother-qual" name="Mother's qualification">
+                <option value="" {% if not form_data.get("Mother's qualification") %}selected{% endif %}>Typical</option>
+                {% for value, label in parent_qualifications %}
+                <option value="{{ value }}" {% if form_data.get("Mother's qualification") == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="father-qual">Father's education level</label>
+              <select id="father-qual" name="Father's qualification">
+                <option value="" {% if not form_data.get("Father's qualification") %}selected{% endif %}>Typical</option>
+                {% for value, label in parent_qualifications %}
+                <option value="{{ value }}" {% if form_data.get("Father's qualification") == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="mother-occ">Mother's occupation</label>
+              <select id="mother-occ" name="Mother's occupation">
+                <option value="" {% if not form_data.get("Mother's occupation") %}selected{% endif %}>Typical</option>
+                {% for value, label in parent_occupations %}
+                <option value="{{ value }}" {% if form_data.get("Mother's occupation") == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="field">
+              <label for="father-occ">Father's occupation</label>
+              <select id="father-occ" name="Father's occupation">
+                <option value="" {% if not form_data.get("Father's occupation") %}selected{% endif %}>Typical</option>
+                {% for value, label in parent_occupations %}
+                <option value="{{ value }}" {% if form_data.get("Father's occupation") == value|string %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <legend>Extra semester details</legend>
+          <div class="field-grid">
+            <div class="field">
+              <label for="s1-credited">Transferred units (1st semester)</label>
+              <input id="s1-credited" type="number" min="0" name="Curricular units 1st sem (credited)" value="{{ form_data.get('Curricular units 1st sem (credited)', '') }}">
+            </div>
+            <div class="field">
+              <label for="s1-eval">Subjects evaluated (1st semester)</label>
+              <input id="s1-eval" type="number" min="0" name="Curricular units 1st sem (evaluations)" value="{{ form_data.get('Curricular units 1st sem (evaluations)', '') }}">
+              <span class="field-hint">Subjects the student was assessed in</span>
+            </div>
+            <div class="field">
+              <label for="s1-without">Subjects not evaluated (1st semester)</label>
+              <input id="s1-without" type="number" min="0" name="Curricular units 1st sem (without evaluations)" value="{{ form_data.get('Curricular units 1st sem (without evaluations)', '') }}">
+            </div>
+            <div class="field">
+              <label for="s2-credited">Transferred units (2nd semester)</label>
+              <input id="s2-credited" type="number" min="0" name="Curricular units 2nd sem (credited)" value="{{ form_data.get('Curricular units 2nd sem (credited)', '') }}">
+            </div>
+            <div class="field">
+              <label for="s2-eval">Subjects evaluated (2nd semester)</label>
+              <input id="s2-eval" type="number" min="0" name="Curricular units 2nd sem (evaluations)" value="{{ form_data.get('Curricular units 2nd sem (evaluations)', '') }}">
+            </div>
+            <div class="field">
+              <label for="s2-without">Subjects not evaluated (2nd semester)</label>
+              <input id="s2-without" type="number" min="0" name="Curricular units 2nd sem (without evaluations)" value="{{ form_data.get('Curricular units 2nd sem (without evaluations)', '') }}">
+            </div>
+          </div>
+        </fieldset>
+
+        <fieldset class="fieldset">
+          <legend>Economy at enrollment time</legend>
+          <div class="field-grid">
+            <div class="field">
+              <label for="unemployment">Regional unemployment rate (%)</label>
+              <input id="unemployment" type="number" step="0.01" name="Unemployment rate" value="{{ form_data.get('Unemployment rate', '') }}">
+            </div>
+            <div class="field">
+              <label for="inflation">Inflation rate (%)</label>
+              <input id="inflation" type="number" step="0.01" name="Inflation rate" value="{{ form_data.get('Inflation rate', '') }}">
+            </div>
+            <div class="field">
+              <label for="gdp">GDP growth indicator</label>
+              <input id="gdp" type="number" step="0.01" name="GDP" value="{{ form_data.get('GDP', '') }}">
+            </div>
+          </div>
+        </fieldset>
+      </details>
+
+      <div class="form-actions">
+        <button type="reset" class="btn btn-secondary">Reset</button>
+        <button type="submit" class="btn btn-primary">Predict student status</button>
+      </div>
+<div class="prediction-grid">
+
+    <!-- Random Forest -->
+
+    <div class="model-card">
+
+        <h2>🌳 Random Forest</h2>
+
+        <h3>{{ rf_prediction }}</h3>
+
+        <p>
+            Confidence :
+            {{ rf_confidence }}%
+        </p>
+
+        <div class="progress">
+
+            <div class="progress-bar"
+
+                 style="width:{{ rf_confidence }}%">
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- LSTM -->
+
+    <div class="model-card">
+
+        <h2>🧠 LSTM</h2>
+
+        <h3>{{ lstm_prediction }}</h3>
+
+        <p>
+
+            Confidence :
+            {{ lstm_confidence }}%
+
+        </p>
+
+        <div class="progress">
+
+            <div class="progress-bar"
+
+                 style="width:{{ lstm_confidence }}%">
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- Final -->
+
+    <div class="model-card final-card">
+
+        <h2>🏆 Final Prediction</h2>
+
+        <h3>{{ final_prediction }}</h3>
+
+        <p>
+
+            Confidence :
+            {{ final_confidence }}%
+
+        </p>
+
+        <div class="progress">
+
+            <div class="progress-bar"
+
+                 style="width:{{ final_confidence }}%">
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+      {% if prediction %}
+      <div id="result"
+           class="result-panel {% if prediction == 'Graduate' %}ok{% elif prediction == 'Enrolled' %}warn{% else %}danger{% endif %}">
+        <div class="result-kicker">Prediction result</div>
+        <div class="result-status">{{ prediction }}</div>
+
+        {% if confidence %}
+        <p class="result-confidence">Confidence {{ confidence }}%</p>
+        <div class="progress" aria-hidden="true">
+          <div class="progress-bar" style="width: {{ confidence }}%;"></div>
+        </div>
+        {% endif %}
+
+        {% if defaults_used %}
+        <p class="result-meta">{{ defaults_used }} optional field{{ 's' if defaults_used != 1 else '' }} filled with dataset medians.</p>
+        {% endif %}
+
+        {% if review_note %}
+        <p class="result-review">{{ review_note }}</p>
+        {% endif %}
+
+        {% if probabilities %}
+        <div class="probabilities" aria-label="Class probabilities">
+          {% for label, value in probabilities.items() %}
+          <div>
+            <span>{{ label }}</span>
+            <strong>{{ value }}%</strong>
+            <i><b style="width: {{ value }}%;"></b></i>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if drivers %}
+        <div class="drivers">
+          <h3>Top drivers</h3>
+          <ul>
+            {% for d in drivers %}
+            <li>
+              <span>{{ d.name }}</span>
+              <span class="driver-bar"><i style="width: {{ [d.score, 100]|min }}%;"></i></span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
+
+        <div class="result-note">
+          {% if prediction == "Graduate" %}
+          <strong>On track</strong>
+          <p>The student is likely to graduate successfully. Keep supporting strong academic habits.</p>
+          {% elif prediction == "Enrolled" %}
+          <strong>Monitor progress</strong>
+          <p>The student is expected to remain enrolled. Improving grades and attendance is recommended.</p>
+          {% elif prediction == "Prediction Failed" %}
+          <strong>Prediction failed</strong>
+          <p>{% if error %}{{ error }}{% else %}Check that every required field has a valid value and try again.{% endif %}</p>
+          {% else %}
+          <strong>High risk</strong>
+          <p>The student is at risk of dropping out. Academic counseling and mentoring are recommended.</p>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+    </form>
+  </div>
+</section>
+
+
+<footer class="site-footer">
+  <div class="container-site">
+    © 2026 Smart Campus AI · Final Year Project · Flask, Python &amp; Machine Learning
+  </div>
+</footer>
+
+<script>
+  const toggle = document.querySelector('.nav-toggle');
+  const links = document.getElementById('navLinks');
+  if (toggle && links) {
+    toggle.addEventListener('click', () => {
+      const open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  {% if prediction %}
+  <div class="prediction-grid">
+
+    <div class="model-card">
+        <h2>🌳 Random Forest</h2>
+
+        <h3>{{ rf_prediction }}</h3>
+
+        <p>
+            Confidence :
+            {{ rf_confidence }}%
+        </p>
+    </div>
+
+
+    <div class="model-card">
+
+        <h2>🧠 LSTM</h2>
+
+        <h3>{{ lstm_prediction }}</h3>
+
+        <p>
+            Confidence :
+            {{ lstm_confidence }}%
+        </p>
+
+    </div>
+
+
+    <div class="model-card">
+
+        <h2>🏆 Final Prediction</h2>
+
+        <h3>{{ ensemble_prediction }}</h3>
+
+        <p>
+            Confidence :
+            {{ ensemble_confidence }}%
+        </p>
+
+    </div>
+
+</div>
+
+<hr>
+  document.getElementById('result')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  {% endif %}
+</script>
+
+</body>
+</html>

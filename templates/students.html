@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dataset Predictions | Smart Campus AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="container-site">
+    <a class="brand" href="/">Smart Campus <span>AI</span></a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/#predict">Predict</a></li>
+      <li><a class="active" href="/students">Dataset</a></li>
+      <li><a href="/metrics">Metrics</a></li>
+      <li><a href="/#about">About</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <div class="container-site">
+    <header class="page-header">
+      <h1>Dataset predictions</h1>
+      <p class="section-lead">Compare each student’s actual status with the model’s prediction, and spot high-risk cases.</p>
+    </header>
+
+    <section class="risk-overview" aria-label="Risk overview">
+      <div class="risk-item">
+        <strong>{{ summary.predicted_graduate }}</strong>
+        <span>Predicted graduate</span>
+      </div>
+      <div class="risk-item">
+        <strong>{{ summary.predicted_enrolled }}</strong>
+        <span>Predicted enrolled</span>
+      </div>
+      <div class="risk-item risk-warn">
+        <strong>{{ summary.predicted_dropout }}</strong>
+        <span>Predicted dropout</span>
+      </div>
+      <div class="risk-item risk-danger">
+        <strong>{{ summary.high_risk }}</strong>
+        <span>High risk (≥70% dropout)</span>
+      </div>
+      <div class="risk-item">
+        <strong>{{ summary.mismatches }}</strong>
+        <span>Model mismatches</span>
+      </div>
+    </section>
+
+    <div class="quick-filters">
+      <a class="chip-link {% if risk_filter == 'all' and status_filter == 'all' and result_filter == 'all' %}active{% endif %}"
+         href="{{ url_for('students') }}">All students</a>
+      <a class="chip-link {% if risk_filter == 'dropout' %}active{% endif %}"
+         href="{{ url_for('students', risk='dropout') }}">Predicted dropout</a>
+      <a class="chip-link {% if risk_filter == 'high' %}active{% endif %}"
+         href="{{ url_for('students', risk='high') }}">High risk</a>
+      <a class="chip-link {% if result_filter == 'incorrect' %}active{% endif %}"
+         href="{{ url_for('students', result='incorrect') }}">Mismatches</a>
+    </div>
+
+    <div class="metrics-strip">
+      <div><strong>{{ dataset_size }}</strong><span>Students in dataset</span></div>
+      <div><strong>{{ total }}</strong><span>Showing after filters</span></div>
+      <div><strong>{{ accuracy }}%</strong><span>Overall match rate</span></div>
+    </div>
+
+    <form class="filter-bar" method="GET" action="/students">
+      <div class="field">
+        <label for="status">Actual status</label>
+        <select id="status" name="status">
+          <option value="all" {% if status_filter == 'all' %}selected{% endif %}>All</option>
+          <option value="Graduate" {% if status_filter == 'Graduate' %}selected{% endif %}>Graduate</option>
+          <option value="Enrolled" {% if status_filter == 'Enrolled' %}selected{% endif %}>Enrolled</option>
+          <option value="Dropout" {% if status_filter == 'Dropout' %}selected{% endif %}>Dropout</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="result">Prediction result</label>
+        <select id="result" name="result">
+          <option value="all" {% if result_filter == 'all' %}selected{% endif %}>All</option>
+          <option value="correct" {% if result_filter == 'correct' %}selected{% endif %}>Correct</option>
+          <option value="incorrect" {% if result_filter == 'incorrect' %}selected{% endif %}>Incorrect</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="risk">Risk view</label>
+        <select id="risk" name="risk">
+          <option value="all" {% if risk_filter == 'all' %}selected{% endif %}>All</option>
+          <option value="dropout" {% if risk_filter == 'dropout' %}selected{% endif %}>Predicted dropout</option>
+          <option value="high" {% if risk_filter == 'high' %}selected{% endif %}>High risk (≥70%)</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">Apply filters</button>
+    </form>
+
+    <div class="table-shell">
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Age</th>
+              <th>Gender</th>
+              <th>Scholarship</th>
+              <th>Debtor</th>
+              <th>Actual</th>
+              <th>Predicted</th>
+              <th>Confidence</th>
+              <th>Match</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td>{{ s.id }}</td>
+              <td>{{ s.age }}</td>
+              <td>{{ s.gender }}</td>
+              <td>{{ s.scholarship }}</td>
+              <td>{{ s.debtor }}</td>
+              <td>
+                <span class="chip chip-{{ s.actual|lower }}">{{ s.actual }}</span>
+              </td>
+              <td>
+                <span class="chip chip-{{ s.predicted|lower }}">{{ s.predicted }}</span>
+              </td>
+              <td>{{ s.confidence }}%</td>
+              <td>
+                {% if s.match %}
+                <span class="match-yes">Yes</span>
+                {% else %}
+                <span class="match-no">No</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="9" style="text-align:center; color: var(--muted); padding: 2rem;">
+                No students match these filters.
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    {% if total_pages > 1 %}
+    <ul class="pagination" aria-label="Student pages">
+      <li class="{% if page <= 1 %}disabled{% endif %}">
+        <a href="{{ url_for('students', page=page-1, status=status_filter, result=result_filter, risk=risk_filter) }}">Prev</a>
+      </li>
+      {% for p in range(1, total_pages + 1) %}
+        {% if p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+        <li class="{% if p == page %}active{% endif %}">
+          <a href="{{ url_for('students', page=p, status=status_filter, result=result_filter, risk=risk_filter) }}">{{ p }}</a>
+        </li>
+        {% elif p == page - 3 or p == page + 3 %}
+        <li class="disabled"><span>…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="{% if page >= total_pages %}disabled{% endif %}">
+        <a href="{{ url_for('students', page=page+1, status=status_filter, result=result_filter, risk=risk_filter) }}">Next</a>
+      </li>
+    </ul>
+    {% endif %}
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container-site">
+    © 2026 Smart Campus AI · Final Year Project
+  </div>
+</footer>
+
+<script>
+  const toggle = document.querySelector('.nav-toggle');
+  const links = document.getElementById('navLinks');
+  if (toggle && links) {
+    toggle.addEventListener('click', () => {
+      const open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+</script>
+
+</body>
+</html>

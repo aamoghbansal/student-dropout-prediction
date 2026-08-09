@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Model Metrics | Smart Campus AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="site-nav">
+  <div class="container-site">
+    <a class="brand" href="/">Smart Campus <span>AI</span></a>
+    <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false">Menu</button>
+    <ul class="nav-links" id="navLinks">
+      <li><a href="/#predict">Predict</a></li>
+      <li><a href="/students">Dataset</a></li>
+      <li><a class="active" href="/metrics">Metrics</a></li>
+      <li><a href="/#about">About</a></li>
+    </ul>
+  </div>
+</header>
+
+<main>
+  <div class="container-site">
+    <header class="page-header">
+      <h1>Model metrics</h1>
+      <p class="section-lead">
+        Compare model performance on the same held-out test split. Macro F1 is highlighted
+        because it gives each class equal weight, including the smaller Enrolled class.
+      </p>
+    </header>
+
+    <section class="metrics-strip">
+      <div><strong>{{ test_size }}</strong><span>Students in test split</span></div>
+      <div><strong>{{ models|length }}</strong><span>Models compared</span></div>
+      <div><strong>{{ best_model.name }}</strong><span>Best macro F1</span></div>
+      <div><strong>{{ best_model.macro_f1 }}%</strong><span>Macro F1 score</span></div>
+    </section>
+
+    {% if not lstm_active %}
+    <p class="result-review">Train the LSTM model to add LSTM and ensemble rows to this report.</p>
+    {% endif %}
+
+    <section class="model-grid" aria-label="Model comparison">
+      {% for model in models %}
+      <article class="model-card {% if model.name == best_model.name %}best{% endif %}">
+        <div class="model-card-head">
+          <h2>{{ model.name }}</h2>
+          {% if model.name == best_model.name %}
+          <span>Best</span>
+          {% endif %}
+        </div>
+        <div class="score-row">
+          <div><strong>{{ model.accuracy }}%</strong><span>Accuracy</span></div>
+          <div><strong>{{ model.macro_f1 }}%</strong><span>Macro F1</span></div>
+          <div><strong>{{ model.weighted_f1 }}%</strong><span>Weighted F1</span></div>
+        </div>
+        <div class="score-bars">
+          <div><span>Precision</span><i><b style="width: {{ model.macro_precision }}%;"></b></i><strong>{{ model.macro_precision }}%</strong></div>
+          <div><span>Recall</span><i><b style="width: {{ model.macro_recall }}%;"></b></i><strong>{{ model.macro_recall }}%</strong></div>
+          <div><span>F1</span><i><b style="width: {{ model.macro_f1 }}%;"></b></i><strong>{{ model.macro_f1 }}%</strong></div>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+
+    {% for model in models %}
+    <section class="metric-detail">
+      <div class="section-head">
+        <h2 class="section-title">{{ model.name }}</h2>
+        <p class="section-lead">Class-wise scores and confusion matrix for this model.</p>
+      </div>
+
+      <div class="metrics-two-col">
+        <div class="table-shell">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Class</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1</th>
+                  <th>Support</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in model.classes %}
+                <tr>
+                  <td><span class="chip chip-{{ row.name|lower }}">{{ row.name }}</span></td>
+                  <td>{{ row.precision }}%</td>
+                  <td>{{ row.recall }}%</td>
+                  <td>{{ row.f1 }}%</td>
+                  <td>{{ row.support }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="confusion-panel">
+          <table class="confusion-table">
+            <thead>
+              <tr>
+                <th>Actual \ Predicted</th>
+                {% for label in labels %}
+                <th>{{ label }}</th>
+                {% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in model.matrix %}
+              <tr>
+                <th>{{ labels[loop.index0] }}</th>
+                {% for value in row %}
+                <td style="--heat: {{ value / model.matrix_max if model.matrix_max else 0 }};">
+                  {{ value }}
+                </td>
+                {% endfor %}
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+    {% endfor %}
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container-site">
+    © 2026 Smart Campus AI · Model Evaluation
+  </div>
+</footer>
+
+<script>
+  const toggle = document.querySelector('.nav-toggle');
+  const links = document.getElementById('navLinks');
+  if (toggle && links) {
+    toggle.addEventListener('click', () => {
+      const open = links.classList.toggle('open');
+      toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+</script>
+
+</body>
+</html>
